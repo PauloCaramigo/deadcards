@@ -159,7 +159,7 @@ function PlayerForm({ editId, onEditId, versionOf, onNewVersion }: { editId: str
   const save = () => {
     const id = d.id || newId("p");
     const body = { ...preview, id, name: d.name.trim() || "NOVO JOGADOR", footer: d.footer?.trim().slice(0, 30), specialText: d.special ? d.specialText?.trim().slice(0, 400) : undefined, frame: d.special ? frame : undefined };
-    run(async () => { await api.save("players", id, body); onEditId(id); }, `Carta de "${body.name}" salva!`);
+    run(async () => { await api.save("players", id, body); await reload(); onEditId(id); }, `Carta de "${body.name}" salva!`);
   };
   const remove = () => {
     if (!d.id) return;
@@ -323,7 +323,7 @@ function PlayerForm({ editId, onEditId, versionOf, onNewVersion }: { editId: str
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" className={primary} disabled={busy} onClick={save}>{busy ? "Salvando…" : "Salvar carta"}</button>
           {d.id && <HoldButton className={danger} disabled={busy} onConfirm={remove} label={`Excluir a carta de ${d.name}`}>Segure p/ excluir</HoldButton>}
-          {d.id && !isMainCard(d) && <button type="button" className={ghost} disabled={busy} onClick={() => run(async () => { await api.promote(d.id); onEditId(d.id); }, `${d.name} agora é a carta principal.`)}>Tornar principal</button>}
+          {d.id && !isMainCard(d) && <button type="button" className={ghost} disabled={busy} onClick={() => run(async () => { await api.promote(d.id); await reload(); set({ variantOf: undefined, inactive: undefined }); onEditId(d.id); }, `${d.name} agora é a carta principal.`)}>Tornar principal</button>}
           {d.id && isMainCard(d) && <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" checked={!!d.inactive} onChange={(e) => set({ inactive: e.target.checked || undefined })} className="accent-zinc-100" />Fora do elenco (versão guardada)</label>}
           <Toast msg={msg} />
         </div>
