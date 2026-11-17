@@ -290,7 +290,8 @@
 .intro.is-ready .intro-card:focus-visible { z-index: 6; rotate: 0deg; translate: 0 -3cqw; scale: 1.22; }
 .intro.is-ready .intro-card:active { scale: 1.16; }
 .intro-card.is-dim { opacity: 0.3; }
-.intro-card.is-chosen { z-index: 7; rotate: 0deg; translate: 0 -4cqw; scale: 1.34; }
+/* a carta escolhida some do leque; quem dá o zoom é a cópia .intro-zoom */
+.intro-card.is-zooming { visibility: hidden; }
 
 .intro-faces { position: absolute; inset: 0; display: block; transform-style: preserve-3d; }
 .intro-rev,
@@ -323,7 +324,7 @@
 }
 .intro.is-ready .intro-card:hover .intro-front,
 .intro.is-ready .intro-card:focus-visible .intro-front,
-.intro-card.is-chosen .intro-front {
+.intro-zoom .intro-front {
   box-shadow: inset 0 0 0 calc(var(--cw) * 0.045) var(--in-black), 0 0 2.6cqw rgb(216 166 64 / 0.7), 0 1.4cqw 2.6cqw rgb(0 0 0 / 0.7);
 }
 .intro-art { position: relative; display: grid; flex: 1; width: 100%; place-items: center; }
@@ -398,6 +399,24 @@
 .intro.is-ready .intro-caption { opacity: 1; }
 .intro-caption.is-hot { color: var(--in-gold); }
 
+/* ---------- saída: zoom da carta escolhida e fade revelando a tela ---------- */
+/* A cópia da carta fica fixa por cima de tudo; o Intro.tsx anima translate/rotate/scale (ZOOM_MS).
+   O fade da intro inteira começa 0,35 s depois do clique e dura 0,45 s (DONE_MS no Intro.tsx). */
+.intro-zoom {
+  position: fixed;
+  z-index: 8;
+  pointer-events: none;
+  will-change: translate, rotate, scale;
+}
+.intro.is-leaving { opacity: 0; pointer-events: none; transition: opacity 0.45s ease 0.35s; }
+.intro.is-leaving .intro-card.is-dim { opacity: 0; transition: opacity 0.2s; }
+
+/* voltando pelo menu lateral: a intro abre direto nas cartas, com um fade curto */
+.intro.is-menu { animation: intro-in 0.3s var(--in-ease); }
+@keyframes intro-in {
+  from { opacity: 0; }
+}
+
 /* "Pular" e "Rever": o próximo estado entra sem transição */
 .intro.is-instant,
 .intro.is-instant * { transition: none !important; animation: none !important; }
@@ -424,7 +443,6 @@
   .intro-card:first-of-type { margin-left: 0; rotate: calc(var(--o) * 0.8deg); translate: 0 0; }
   .intro.is-ready .intro-card:hover,
   .intro.is-ready .intro-card:focus-visible { translate: 0 -4px; scale: 1.06; }
-  .intro-card.is-chosen { translate: 0 -6px; scale: 1.1; }
   .intro-pool { width: 100%; height: 100%; }
   .intro-caption { position: relative; bottom: auto; padding: 14px 0 28px; }
   .intro-name { font-size: calc(var(--cw) * 0.13); }

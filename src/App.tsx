@@ -21,7 +21,8 @@ import { Profile } from "./views/Profile";
 import { easeOut } from "./lib/ui";
 import { Settings } from "./views/Settings";
 import { profileUrl } from "./lib/profile";
-import { Intro, type IntroTarget } from "./components/Intro";
+import { Intro } from "./components/Intro";
+import type { MenuTarget } from "./lib/menu";
 
 // A intro abre uma vez por sessão, só para quem entra pelo início do site.
 const INTRO_KEY = "intro-seen";
@@ -266,8 +267,8 @@ function Shell() {
   const openProfile = (id: string) => { setProfileId(id); setTab("profile"); };
   const [intro, setIntro] = useState(() => location.pathname === "/" && !location.search && !introSeen());
   const closeIntro = () => { markIntroSeen(); setIntro(false); };
-  const pickIntro = (target: IntroTarget) => {
-    closeIntro();
+  // Destino de uma carta da intro. A intro chama durante a saída e se fecha sozinha depois (onClose).
+  const go = (target: MenuTarget) => {
     if (target === "profile" || target === "settings") {
       if (!me) { location.href = "/login"; return; }
       if (target === "profile") openProfile(me.handle ?? me.id);
@@ -361,7 +362,7 @@ function Shell() {
         </p>
       </footer>
 
-      {intro && <Intro onPick={pickIntro} onClose={closeIntro} />}
+      {intro && <Intro onPick={go} onClose={closeIntro} />}
 
       <AnimatePresence>
         {spotlight && <Spotlight key="spotlight" playerId={spotlight} onClose={() => setSpotlight(null)} onSwitch={setSpotlight} onEdit={me?.admin ? editCard : undefined} />}

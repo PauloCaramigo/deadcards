@@ -1,14 +1,7 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { strings, useT } from "../lib/i18n";
+import { MENU, MENU_ICONS, MENU_TARGETS, plainName, type MenuTarget } from "../lib/menu";
 
-/** Destinos que as cartas da intro abrem. O App decide o que cada um faz (aba, perfil, login). */
-export type IntroTarget = "home" | "teams" | "tierlist" | "collection" | "compare" | "redeem" | "profile" | "settings";
-
-const TARGETS: IntroTarget[] = ["home", "teams", "tierlist", "collection", "compare", "redeem", "profile", "settings"];
-
-type Card = { name: string; desc: string };
-
-// Nomes com mais de 8 letras levam hífen opcional (­) para quebrar em duas linhas na carta.
 const S = strings({
   pt: {
     dialog: "Entrada do Cardslock",
@@ -18,18 +11,8 @@ const S = strings({
     pick: "Escolha uma carta",
     skip: "Pular intro",
     replay: "Rever intro",
-    close: "Fechar e ir para o início",
+    close: "Fechar",
     menu: "Menu do site",
-    cards: {
-      home: { name: "Página inicial", desc: "Novidades e destaques" },
-      teams: { name: "Times", desc: "Os times e seus jogadores" },
-      tierlist: { name: "Tier List", desc: "Ranking das cartas" },
-      collection: { name: "Coleção", desc: "Todas as cartas, com filtros" },
-      compare: { name: "Comparar", desc: "Duas cartas lado a lado" },
-      redeem: { name: "Resgatar", desc: "Use um código e ganhe cartas" },
-      profile: { name: "Perfil", desc: "Sua carta e suas conquistas" },
-      settings: { name: "Configu­rações", desc: "Conta e contas vinculadas" },
-    } satisfies Record<IntroTarget, Card>,
   },
   en: {
     dialog: "Cardslock entrance",
@@ -39,18 +22,8 @@ const S = strings({
     pick: "Pick a card",
     skip: "Skip intro",
     replay: "Replay intro",
-    close: "Close and go to home",
+    close: "Close",
     menu: "Site menu",
-    cards: {
-      home: { name: "Home", desc: "News and highlights" },
-      teams: { name: "Teams", desc: "The teams and their players" },
-      tierlist: { name: "Tier List", desc: "Card ranking" },
-      collection: { name: "Collec­tion", desc: "Every card, with filters" },
-      compare: { name: "Compare", desc: "Two cards side by side" },
-      redeem: { name: "Redeem", desc: "Use a code to get cards" },
-      profile: { name: "Profile", desc: "Your card and achievements" },
-      settings: { name: "Settings", desc: "Account and linked accounts" },
-    },
   },
   es: {
     dialog: "Entrada de Cardslock",
@@ -60,31 +33,10 @@ const S = strings({
     pick: "Elige una carta",
     skip: "Saltar intro",
     replay: "Ver intro de nuevo",
-    close: "Cerrar e ir al inicio",
+    close: "Cerrar",
     menu: "Menú del sitio",
-    cards: {
-      home: { name: "Inicio", desc: "Novedades y destacados" },
-      teams: { name: "Equipos", desc: "Los equipos y sus jugadores" },
-      tierlist: { name: "Tier List", desc: "Ranking de las cartas" },
-      collection: { name: "Colec­ción", desc: "Todas las cartas, con filtros" },
-      compare: { name: "Comparar", desc: "Dos cartas lado a lado" },
-      redeem: { name: "Canjear", desc: "Usa un código y gana cartas" },
-      profile: { name: "Perfil", desc: "Tu carta y tus logros" },
-      settings: { name: "Configu­ración", desc: "Cuenta y cuentas vinculadas" },
-    },
   },
 });
-
-const ICONS: Record<IntroTarget, ReactNode> = {
-  home: <><path d="M3 11.5 12 4l9 7.5" /><path d="M5.5 10v10h13V10" /><path d="M10 20v-6h4v6" /></>,
-  teams: <><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 20c.6-3.4 3-5 6-5s5.4 1.6 6 5" /><path d="M15.5 14.2c2.6-.3 4.8 1.2 5.5 4.3" /></>,
-  tierlist: <><path d="M3 21v-6h5v6" /><path d="M9.5 21V9h5v12" /><path d="M16 21V3h5v18" /><path d="M2 21h20" /></>,
-  collection: <><rect x="6.5" y="4" width="11" height="15" rx="1.5" transform="rotate(10 12 11.5)" /><rect x="6.5" y="5" width="11" height="15" rx="1.5" transform="rotate(-10 12 12.5)" /></>,
-  compare: <><rect x="2.5" y="5" width="7.5" height="12" rx="1" /><rect x="14" y="5" width="7.5" height="12" rx="1" /><path d="m11 9.5 2 1.5-2 1.5" /><path d="M8 20.5h8" /></>,
-  redeem: <><rect x="4" y="9" width="16" height="11" rx="1" /><path d="M3 9h18V6.5H3z" /><path d="M12 6.5V20" /><path d="M12 6.5C9.5 3 6.5 4.5 8.2 6.5M12 6.5c2.5-3.5 5.5-2 3.8 0" /></>,
-  profile: <><path d="M8.5 9.5 9.5 5h5l1 4.5" /><path d="M4 10.5c5 2.2 11 2.2 16 0" /><path d="M9 13.5V15c0 1.5 1.3 2.5 3 2.5s3-1 3-2.5v-1.5" /><path d="M5 21.5c.6-2.6 3.2-4 7-4s6.4 1.4 7 4" /></>,
-  settings: <><circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="6.5" /><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22M4.9 4.9l2.5 2.5M16.6 16.6l2.5 2.5M19.1 4.9l-2.5 2.5M7.4 16.6l-2.5 2.5" /></>,
-};
 
 /** Fases da coreografia, em ordem; cada uma liga uma classe no .intro (ver src/styles/intro.css). */
 const Phase = { Closed: 0, Unlock: 1, Open: 2, Lit: 3, Deck: 4, Dealt: 5, Ready: 6 } as const;
@@ -98,6 +50,11 @@ const SCRIPT: [Phase, number][] = [
   [Phase.Deck, 800],
   [Phase.Dealt, 1300],
 ];
+
+/** Saída ao escolher uma carta: ela cresce até cobrir a tela e a intro some revelando a tela escolhida. */
+const ZOOM_MS = 750;   // duração do zoom da carta
+const SWAP_MS = 300;   // quando a tela escolhida é montada por baixo da intro
+const DONE_MS = 850;   // quando a intro sai da página (o fade no CSS acaba em 0,35 s + 0,45 s)
 
 const cx = (...c: (string | false)[]) => c.filter(Boolean).join(" ");
 const prefersReduced = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -118,22 +75,43 @@ function Wheel({ id }: { id: string }) {
   );
 }
 
-export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => void; onClose: () => void }) {
+/** Frente da carta da intro (também usada na carta que dá o zoom). */
+function Front({ id, name }: { id: MenuTarget; name: string }) {
+  return (
+    <span className="intro-front">
+      <span className="intro-art">
+        <svg viewBox="0 0 24 24" aria-hidden="true">{MENU_ICONS[id]}</svg>
+      </span>
+      <span className="intro-rule" />
+      <span className="intro-name">{name}</span>
+    </span>
+  );
+}
+
+type Zoom = { id: MenuTarget; x: number; y: number; w: number; h: number; rotate: string };
+
+/**
+ * Intro do site. `start="full"` toca a porta e a distribuição; `start="menu"` abre direto nas cartas
+ * (quando a pessoa volta para a intro pelo menu lateral).
+ * `onPick` troca a tela por baixo durante a saída; `onClose` tira a intro da página.
+ */
+export function Intro({ start = "full", onPick, onClose }: { start?: "full" | "menu"; onPick: (target: MenuTarget) => void; onClose: () => void }) {
   const t = useT(S);
+  const m = useT(MENU);
   const wheelId = `intro-wheel-${useId().replace(/[^\w-]/g, "")}`;
-  const [phase, setPhase] = useState<Phase>(() => (prefersReduced() ? Phase.Ready : Phase.Closed));
+  const [phase, setPhase] = useState<Phase>(() => (start === "menu" || prefersReduced() ? Phase.Ready : Phase.Closed));
   const [run, setRun] = useState(0);
   const [instant, setInstant] = useState(false);
-  const [hover, setHover] = useState<IntroTarget | null>(null);
-  const [chosen, setChosen] = useState<IntroTarget | null>(null);
+  const [hover, setHover] = useState<MenuTarget | null>(null);
+  const [zoom, setZoom] = useState<Zoom | null>(null);
   const deckRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const zoomRef = useRef<HTMLDivElement>(null);
   const skipRef = useRef<HTMLButtonElement>(null);
-  const pickTimer = useRef<number>(undefined);
 
   // Linha do tempo: agenda as fases até a distribuição das cartas.
   useEffect(() => {
-    if (prefersReduced()) return;
+    if (prefersReduced() || (run === 0 && start === "menu")) return;
     const timers: number[] = [];
     let at = 0;
     for (const [p, wait] of SCRIPT) {
@@ -141,7 +119,7 @@ export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => vo
       timers.push(window.setTimeout(() => setPhase((cur) => (cur < p ? p : cur)), at));
     }
     return () => timers.forEach(clearTimeout);
-  }, [run]);
+  }, [run, start]);
 
   // Pular / Rever trocam de estado sem transição; ela volta dois quadros depois.
   useEffect(() => {
@@ -184,11 +162,32 @@ export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => vo
     return () => { live = false; anims.forEach((a) => a.cancel()); };
   }, [phase]);
 
-  // Esc fecha. O ref evita reinscrever o listener a cada render do App.
+  // Os callbacks do App mudam a cada render; os refs evitam reinscrever listeners e timers.
+  const pickRef = useRef(onPick);
   const closeRef = useRef(onClose);
-  useEffect(() => { closeRef.current = onClose; }, [onClose]);
+  useEffect(() => { pickRef.current = onPick; closeRef.current = onClose; }, [onPick, onClose]);
 
-  // Enquanto a intro está aberta: foco no primeiro controle e sem rolagem no site por trás.
+  // Saída: a carta escolhida vai para o centro e cresce até cobrir a tela; a tela escolhida
+  // é montada por baixo e a intro some (classe is-leaving no CSS).
+  useLayoutEffect(() => {
+    if (!zoom) return;
+    const el = zoomRef.current;
+    const scale = Math.max(innerWidth / zoom.w, innerHeight / zoom.h) * 1.15;
+    const dx = innerWidth / 2 - (zoom.x + zoom.w / 2);
+    const dy = innerHeight / 2 - (zoom.y + zoom.h / 2);
+    const anim = el?.animate(
+      [
+        { translate: "0px 0px", rotate: zoom.rotate, scale: "1" },
+        { translate: `${dx}px ${dy}px`, rotate: "0deg", scale: String(scale) },
+      ],
+      { duration: ZOOM_MS, easing: "cubic-bezier(.6,0,.35,1)", fill: "forwards" },
+    );
+    const swap = window.setTimeout(() => pickRef.current(zoom.id), SWAP_MS);
+    const done = window.setTimeout(() => closeRef.current(), DONE_MS);
+    return () => { anim?.cancel(); clearTimeout(swap); clearTimeout(done); };
+  }, [zoom]);
+
+  // Enquanto a intro está aberta: foco no primeiro controle, sem rolagem no site por trás e Esc fecha.
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -198,25 +197,29 @@ export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => vo
     return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); };
   }, []);
 
-  useEffect(() => () => window.clearTimeout(pickTimer.current), []);
-
   const ready = phase === Phase.Ready;
   const skip = () => { setInstant(true); setPhase(Phase.Ready); };
   const replay = () => {
     setInstant(true);
     setHover(null);
-    setChosen(null);
     if (prefersReduced()) return;
     setPhase(Phase.Closed);
     setRun((r) => r + 1);
   };
-  const pick = (target: IntroTarget) => {
-    if (!ready || chosen) return;
-    setChosen(target);
-    pickTimer.current = window.setTimeout(() => onPick(target), 220);
+  const pick = (id: MenuTarget, i: number) => {
+    if (!ready || zoom) return;
+    const card = cardRefs.current[i];
+    if (!card || prefersReduced()) { onPick(id); onClose(); return; }
+    // Medidas da carta como está na tela agora (já crescida pelo hover).
+    const cs = getComputedStyle(card);
+    const s = cs.scale === "none" ? 1 : parseFloat(cs.scale) || 1;
+    const r = card.getBoundingClientRect();
+    const w = card.offsetWidth * s;
+    const h = card.offsetHeight * s;
+    setZoom({ id, x: r.left + r.width / 2 - w / 2, y: r.top + r.height / 2 - h / 2, w, h, rotate: cs.rotate === "none" ? "0deg" : cs.rotate });
   };
 
-  const caption = hover ? `${t.cards[hover].name.replace(/­/g, "")} · ${t.cards[hover].desc}` : t.pick;
+  const caption = hover ? `${plainName(m[hover].name)} · ${m[hover].desc}` : t.pick;
 
   return (
     <div
@@ -225,6 +228,7 @@ export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => vo
       aria-label={t.dialog}
       className={cx(
         "intro",
+        start === "menu" && run === 0 && "is-menu",
         phase >= Phase.Unlock && "is-unlock",
         phase >= Phase.Open && "is-open",
         phase >= Phase.Lit && "is-lit",
@@ -233,6 +237,7 @@ export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => vo
         phase >= Phase.Dealt && "is-dealt",
         ready && "is-ready",
         instant && "is-instant",
+        !!zoom && "is-leaving",
       )}
     >
       <div className="intro-stage">
@@ -250,16 +255,16 @@ export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => vo
             <i className="intro-back" />
             <i className="intro-back" />
           </div>
-          {TARGETS.map((id, i) => (
+          {MENU_TARGETS.map((id, i) => (
             <button
               key={id}
               ref={(el) => { cardRefs.current[i] = el; }}
               type="button"
               tabIndex={ready ? 0 : -1}
-              aria-label={`${t.cards[id].name.replace(/­/g, "")}: ${t.cards[id].desc}`}
-              className={cx("intro-card", chosen === id && "is-chosen", !!chosen && chosen !== id && "is-dim")}
-              style={{ "--o": i - (TARGETS.length - 1) / 2 } as CSSProperties}
-              onClick={() => pick(id)}
+              aria-label={`${plainName(m[id].name)}: ${m[id].desc}`}
+              className={cx("intro-card", zoom?.id === id && "is-zooming", !!zoom && zoom.id !== id && "is-dim")}
+              style={{ "--o": i - (MENU_TARGETS.length - 1) / 2 } as CSSProperties}
+              onClick={() => pick(id, i)}
               onMouseEnter={() => ready && setHover(id)}
               onFocus={() => ready && setHover(id)}
               onMouseLeave={() => setHover(null)}
@@ -267,13 +272,7 @@ export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => vo
             >
               <span className="intro-faces">
                 <span className="intro-rev" />
-                <span className="intro-front">
-                  <span className="intro-art">
-                    <svg viewBox="0 0 24 24" aria-hidden="true">{ICONS[id]}</svg>
-                  </span>
-                  <span className="intro-rule" />
-                  <span className="intro-name">{t.cards[id].name}</span>
-                </span>
+                <Front id={id} name={m[id].name} />
               </span>
             </button>
           ))}
@@ -281,6 +280,17 @@ export function Intro({ onPick, onClose }: { onPick: (target: IntroTarget) => vo
 
         <p className={cx("intro-caption", !!hover && "is-hot")} aria-live="polite">{caption}</p>
       </div>
+
+      {zoom && (
+        <div
+          ref={zoomRef}
+          className="intro-zoom"
+          aria-hidden="true"
+          style={{ left: zoom.x, top: zoom.y, width: zoom.w, height: zoom.h, "--cw": `${zoom.w}px` } as CSSProperties}
+        >
+          <Front id={zoom.id} name={m[zoom.id].name} />
+        </div>
+      )}
 
       <div className="intro-door" aria-hidden="true">
         <div className="intro-glow" />
