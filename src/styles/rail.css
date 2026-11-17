@@ -1,0 +1,171 @@
+/* ==========================================================================
+   MENU LATERAL DE CARTAS (src/components/Rail.tsx)
+   Coluna fixa na borda esquerda, abaixo do cabeçalho. Cada carta fica escondida,
+   mostrando só a faixa da direita (--peek) com o ícone no canto; no hover/foco sai inteira.
+   Fica em CSS próprio por ser efeito (cartas sobrepostas que deslizam para fora).
+   ========================================================================== */
+
+.rail {
+  --rw: 84px;                 /* largura da carta (altura vem da proporção do verso) */
+  --peek: 34px;               /* quanto da carta aparece quando está escondida */
+  --rail-gold: #d8a640;
+  --rail-cream: var(--color-dl-text, #ffefd7);
+  --rail-black: var(--color-dl-black, #10130d);
+  --rail-ease: var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+
+  position: fixed;
+  top: 64px;                  /* altura do cabeçalho (h-16) */
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  width: calc(var(--rw) + 24px);
+  padding-block: 10px 16px;
+  pointer-events: none;       /* só as cartas recebem o mouse, o resto da coluna deixa clicar no site */
+}
+@media (width >= 40rem) {
+  .rail { top: 80px; }        /* sm:h-20 */
+}
+/* toque: sem hover, então a faixa visível é maior e dá para tocar com folga (44 px) */
+@media (hover: none) {
+  .rail { --peek: 46px; }
+}
+
+/* cada vaga divide a altura da coluna; a carta é mais alta que a vaga e cobre a de baixo */
+.rail-slot { position: relative; flex: 1 1 0; min-height: 0; max-height: 112px; }
+
+/* área de clique: faixa fixa da vaga. Escondida, cobre só a parte visível da carta;
+   aberta, cresce até a largura da carta para o mouse continuar em cima dela. */
+.rail-card {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(var(--peek) + 6px);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--rail-black);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.rail-card:hover,
+.rail-card:focus-visible { z-index: 5; width: calc(var(--rw) + 18px); }
+/* o foco aparece no desenho da carta, não na faixa */
+.rail-card:focus-visible { outline: none; }
+.rail-card:focus-visible .rail-visual { outline: 2px solid var(--rail-gold); outline-offset: 3px; }
+
+/* o desenho da carta: mais alto que a vaga, desliza para fora e não recebe o mouse */
+.rail-visual {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: var(--rw);
+  aspect-ratio: 337 / 525;
+  border-radius: 5px;
+  pointer-events: none;
+  translate: calc(var(--peek) - var(--rw)) 0;
+  rotate: -2deg;
+  transform-origin: 100% 0;
+  filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.55));
+  transition: translate 0.24s var(--rail-ease), rotate 0.24s var(--rail-ease), scale 0.24s var(--rail-ease);
+}
+.rail-card[aria-current="page"] .rail-visual { translate: calc(var(--peek) - var(--rw) + 10px) 0; }
+.rail-card:hover .rail-visual,
+.rail-card:focus-visible .rail-visual { translate: 12px 0; rotate: 0deg; scale: 1.04; }
+.rail-card:active .rail-visual { scale: 0.98; }
+
+.rail-front {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 10px 6px 12px;
+  border-radius: 5px;
+  background: var(--rail-cream);
+  box-shadow: inset 0 0 0 3px var(--rail-black);
+  transition: box-shadow 0.24s;
+}
+.rail-front::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgb(16 19 13 / 0.45);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.rail-card[aria-current="page"] .rail-front,
+.rail-card:hover .rail-front,
+.rail-card:focus-visible .rail-front {
+  box-shadow: inset 0 0 0 3px var(--rail-black), 0 0 14px rgb(216 166 64 / 0.65);
+}
+
+.rail-front svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.rail-front svg * { vector-effect: non-scaling-stroke; }
+/* índice no canto de cima à direita: é o que fica à mostra com a carta escondida */
+.rail-index { position: absolute; top: 9px; right: 8px; width: 18px; height: 18px; stroke-width: 2px; }
+.rail-card[aria-current="page"] .rail-index { color: #8a6a28; }
+.rail-art { flex: 1; width: 46%; stroke-width: 1.75px; }
+/* escondida, a carta mostra só o índice do canto; o ícone grande e o nome aparecem quando ela abre */
+.rail-art,
+.rail-name { opacity: 0; transition: opacity 0.18s; }
+.rail-card:hover .rail-art,
+.rail-card:hover .rail-name,
+.rail-card:focus-visible .rail-art,
+.rail-card:focus-visible .rail-name { opacity: 1; }
+.rail-name {
+  font-family: var(--font-display, 'VALVE Pulp', sans-serif);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  hyphens: manual;
+}
+
+/* deck no topo: volta para a intro */
+.rail-back {
+  position: absolute;
+  inset: 0;
+  background: url('/intro/card-back.png') center / 100% 100% no-repeat;
+}
+.rail-back:nth-child(1) { translate: -2px 5px; rotate: -3deg; }
+.rail-back:nth-child(2) { translate: 1px 2.5px; rotate: 2deg; }
+
+/* legenda ao lado da carta aberta (só com mouse; no toque fica escondida) */
+.rail-tip {
+  position: absolute;
+  top: 10px;
+  left: calc(var(--rw) + 26px);
+  padding: 6px 10px;
+  border: 1px solid rgb(216 166 64 / 0.45);
+  border-radius: 6px;
+  background: rgb(12 13 16 / 0.94);
+  color: var(--rail-cream);
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  translate: -6px 0;
+  pointer-events: none;
+  transition: opacity 0.18s, translate 0.18s var(--rail-ease);
+}
+.rail-card:hover .rail-tip,
+.rail-card:focus-visible .rail-tip { opacity: 1; translate: 0 0; }
+@media (hover: none) {
+  .rail-tip { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-visual,
+  .rail-tip,
+  .rail-art,
+  .rail-name,
+  .rail-front { transition-duration: 0.01ms; }
+}

@@ -22,6 +22,7 @@ import { easeOut } from "./lib/ui";
 import { Settings } from "./views/Settings";
 import { profileUrl } from "./lib/profile";
 import { Intro } from "./components/Intro";
+import { Rail } from "./components/Rail";
 import type { MenuTarget } from "./lib/menu";
 
 // A intro abre uma vez por sessão, só para quem entra pelo início do site.
@@ -40,12 +41,9 @@ function GitHubIcon() {
 }
 
 type Tab = "home" | "teams" | "tierlist" | "collection" | "redeem" | "compare" | "editor" | "privacy" | "terms" | "feedback" | "profile" | "settings";
-const TABS = ["teams", "tierlist", "collection", "compare", "redeem"] as const;
 
 const S = strings({
   pt: {
-    tabs: { teams: "Times", tierlist: "Tier List", collection: "Coleção", compare: "Comparar", redeem: "Resgatar", editor: "Editor" },
-    mainNav: "Navegação principal",
     projectLinks: "Links do projeto",
     language: "Idioma",
     github: "Código aberto no GitHub",
@@ -61,8 +59,6 @@ const S = strings({
     rmClose: "Fechar aviso",
   },
   en: {
-    tabs: { teams: "Teams", tierlist: "Tier List", collection: "Collection", compare: "Compare", redeem: "Redeem", editor: "Editor" },
-    mainNav: "Main navigation",
     projectLinks: "Project links",
     language: "Language",
     github: "Open source on GitHub",
@@ -78,8 +74,6 @@ const S = strings({
     rmClose: "Dismiss notice",
   },
   es: {
-    tabs: { teams: "Equipos", tierlist: "Tier List", collection: "Colección", compare: "Comparar", redeem: "Canjear", editor: "Editor" },
-    mainNav: "Navegación principal",
     projectLinks: "Enlaces del proyecto",
     language: "Idioma",
     github: "Código abierto en GitHub",
@@ -261,13 +255,13 @@ function Shell() {
   const [editId, setEditId] = useState<string | null>(null);
   const { me } = useData();
   const t = useT(S);
-  const tabs = me?.admin ? [...TABS, "editor" as const] : TABS;
   const openTeam = (id: string) => { setFocusTeam(id); setTab("teams"); };
   const editCard = (id: string) => { setSpotlight(null); setEditId(id); setTab("editor"); };
   const openProfile = (id: string) => { setProfileId(id); setTab("profile"); };
-  const [intro, setIntro] = useState(() => location.pathname === "/" && !location.search && !introSeen());
+  // A intro abre inteira na primeira visita ("full") e direto nas cartas quando a pessoa volta pelo deck do menu lateral ("menu").
+  const [intro, setIntro] = useState<false | "full" | "menu">(() => (location.pathname === "/" && !location.search && !introSeen() ? "full" : false));
   const closeIntro = () => { markIntroSeen(); setIntro(false); };
-  // Destino de uma carta da intro. A intro chama durante a saída e se fecha sozinha depois (onClose).
+  // Destino de uma carta, da intro ou do menu lateral.
   const go = (target: MenuTarget) => {
     if (target === "profile" || target === "settings") {
       if (!me) { location.href = "/login"; return; }
@@ -298,71 +292,62 @@ function Shell() {
             <span className="size-2.5 rounded-full bg-zinc-100 shadow-[0_0_12px_rgba(255,255,255,0.9)]" />
             <span className="font-display text-base font-extrabold tracking-[0.18em] text-zinc-100 uppercase sm:text-xl"><span className="sm:hidden">CL</span><span className="hidden sm:inline">Cardslock</span></span>
           </button>
-          <nav className="relative ml-auto flex min-w-0 scrollbar-none items-center gap-2 overflow-x-auto mask-x-from-[calc(100%-1.5rem)] px-6 py-1" aria-label={t.mainNav}>
-            {tabs.map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={(e) => { setFocusTeam(undefined); setTab(id); e.currentTarget.scrollIntoView({ inline: "nearest", block: "nearest" }); }}
-                aria-current={tab === id ? "page" : undefined}
-                className={`relative flex min-h-11 shrink-0 cursor-pointer items-center rounded-lg border px-3 text-xs font-bold tracking-widest whitespace-nowrap uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-zinc-100 sm:min-h-10 sm:px-4 sm:text-sm ${
-                  tab === id ? "border-dl-text text-dl-black" : "border-black/50 bg-linear-to-b from-dl-bevel-from to-dl-bevel-to text-white text-shadow-xs hover:from-dl-bevel-hover-from hover:to-dl-bevel-hover-to"
-                }`}
-              >
-                {tab === id && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-lg bg-dl-text shadow-[0_0_18px_rgba(255,239,215,0.35)]" transition={{ type: "spring", stiffness: 380, damping: 30 }} />}
-                <span className="relative">{t.tabs[id]}</span>
-              </button>
-            ))}
-          </nav>
-          <LangMenu />
-          <div className="shrink-0"><Account onProfile={() => { if (me) openProfile(me.handle ?? me.id); }} onSettings={() => setTab("settings")} /></div>
+          <div className="flex items-center gap-3">
+            <LangMenu />
+            <div className="shrink-0"><Account onProfile={() => { if (me) openProfile(me.handle ?? me.id); }} onSettings={() => setTab("settings")} /></div>
+          </div>
         </div>
       </header>
 
-      <ReducedMotionNotice />
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-        <motion.div
-            key={tab}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.15, ease: easeOut }}
-          >
-            {tab === "home" && <Home onOpenTeam={openTeam} />}
-            {tab === "teams" && <Teams focusTeamId={focusTeam} onOpenCard={setSpotlight} />}
-            {tab === "tierlist" && <TierList onOpenCard={setSpotlight} onOpenTeam={openTeam} />}
-            {tab === "collection" && <Collection onOpenCard={setSpotlight} />}
-            {tab === "redeem" && <Redeem onOpenCard={setSpotlight} />}
-            {tab === "compare" && <Compare onOpenCard={setSpotlight} />}
-            {tab === "profile" && profileId && <Profile key={profileId} userId={profileId} onOpenCard={setSpotlight} onRedeem={() => setTab("redeem")} />}
-            {tab === "settings" && me && <Settings link={linkResult} />}
-            {tab === "editor" && me?.admin && <Editor editId={editId} onEditId={setEditId} />}
-            {(tab === "privacy" || tab === "terms") && <Legal page={tab} />}
-            {tab === "feedback" && <Feedback />}
-          </motion.div>
-      </main>
+      <Rail active={tab} admin={!!me?.admin} onPick={go} onIntro={() => setIntro("menu")} />
 
-      <footer className="mt-6 border-t border-zinc-200/10">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-zinc-400 sm:px-6 lg:px-8">
-          <a href={REPO} target="_blank" rel="noreferrer" className="flex items-center gap-2 font-bold tracking-wider text-zinc-300 uppercase hover:text-white">
-            <GitHubIcon /> {t.github}
-          </a>
-          <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label={t.projectLinks}>
-            <button type="button" onClick={() => setTab("feedback")} className="cursor-pointer hover:text-white">{t.feedback}</button>
-            <a href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer" className="hover:text-white">{t.contribute}</a>
-            <button type="button" onClick={() => setTab("privacy")} className="cursor-pointer hover:text-white">{t.privacy}</button>
-            <button type="button" onClick={() => setTab("terms")} className="cursor-pointer hover:text-white">{t.terms}</button>
-          </nav>
-        </div>
-        <p className="mx-auto max-w-7xl px-4 pb-6 text-xs text-zinc-500 sm:px-6 lg:px-8">
-          {t.managed}{" "}
-          <a href="https://www.youtube.com/@hagizao" target="_blank" rel="noreferrer" className="text-zinc-300 hover:text-white">YouTube</a> ·{" "}
-          <a href="https://www.twitch.tv/hagizao" target="_blank" rel="noreferrer" className="text-zinc-300 hover:text-white">Twitch</a> ·{" "}
-          <a href="https://kick.com/hagizao" target="_blank" rel="noreferrer" className="text-zinc-300 hover:text-white">Kick</a>.{" "}
-          {t.notAffiliated}
-        </p>
-      </footer>
+      {/* recuo à esquerda para o conteúdo não ficar embaixo da faixa visível das cartas do menu lateral */}
+      <div className="pl-14">
+        <ReducedMotionNotice />
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+          <motion.div
+              key={tab}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.15, ease: easeOut }}
+            >
+              {tab === "home" && <Home onOpenTeam={openTeam} />}
+              {tab === "teams" && <Teams focusTeamId={focusTeam} onOpenCard={setSpotlight} />}
+              {tab === "tierlist" && <TierList onOpenCard={setSpotlight} onOpenTeam={openTeam} />}
+              {tab === "collection" && <Collection onOpenCard={setSpotlight} />}
+              {tab === "redeem" && <Redeem onOpenCard={setSpotlight} />}
+              {tab === "compare" && <Compare onOpenCard={setSpotlight} />}
+              {tab === "profile" && profileId && <Profile key={profileId} userId={profileId} onOpenCard={setSpotlight} onRedeem={() => setTab("redeem")} />}
+              {tab === "settings" && me && <Settings link={linkResult} />}
+              {tab === "editor" && me?.admin && <Editor editId={editId} onEditId={setEditId} />}
+              {(tab === "privacy" || tab === "terms") && <Legal page={tab} />}
+              {tab === "feedback" && <Feedback />}
+            </motion.div>
+        </main>
 
-      {intro && <Intro onPick={go} onClose={closeIntro} />}
+        <footer className="mt-6 border-t border-zinc-200/10">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-zinc-400 sm:px-6 lg:px-8">
+            <a href={REPO} target="_blank" rel="noreferrer" className="flex items-center gap-2 font-bold tracking-wider text-zinc-300 uppercase hover:text-white">
+              <GitHubIcon /> {t.github}
+            </a>
+            <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label={t.projectLinks}>
+              <button type="button" onClick={() => setTab("feedback")} className="cursor-pointer hover:text-white">{t.feedback}</button>
+              <a href={`${REPO}/blob/main/CONTRIBUTING.md`} target="_blank" rel="noreferrer" className="hover:text-white">{t.contribute}</a>
+              <button type="button" onClick={() => setTab("privacy")} className="cursor-pointer hover:text-white">{t.privacy}</button>
+              <button type="button" onClick={() => setTab("terms")} className="cursor-pointer hover:text-white">{t.terms}</button>
+            </nav>
+          </div>
+          <p className="mx-auto max-w-7xl px-4 pb-6 text-xs text-zinc-500 sm:px-6 lg:px-8">
+            {t.managed}{" "}
+            <a href="https://www.youtube.com/@hagizao" target="_blank" rel="noreferrer" className="text-zinc-300 hover:text-white">YouTube</a> ·{" "}
+            <a href="https://www.twitch.tv/hagizao" target="_blank" rel="noreferrer" className="text-zinc-300 hover:text-white">Twitch</a> ·{" "}
+            <a href="https://kick.com/hagizao" target="_blank" rel="noreferrer" className="text-zinc-300 hover:text-white">Kick</a>.{" "}
+            {t.notAffiliated}
+          </p>
+        </footer>
+      </div>
+
+      {intro && <Intro start={intro} onPick={go} onClose={closeIntro} />}
 
       <AnimatePresence>
         {spotlight && <Spotlight key="spotlight" playerId={spotlight} onClose={() => setSpotlight(null)} onSwitch={setSpotlight} onEdit={me?.admin ? editCard : undefined} />}
