@@ -132,6 +132,18 @@ async function upload(env: Env, request: Request, folder: string): Promise<Respo
   return Response.json({ url: `/img/${key}` });
 }
 
+async function promote(env: Env, id: string): Promise<Response> {
+  const row = await env.DB.prepare("SELECT json_extract(extra_json, '$.variantOf') AS main FROM players WHERE id = ?").bind(id).first<{ main: string | null }>();
+  if (!row) return bad("carta não encontrada", 404);
+  if (!row.main || row.main === id) return bad("esta carta já é a principal");
+  await env.DB.batch([
+    env.DB.prepare("UPDATE players SET extra_json = json_remove(extra_json, '$.variantOf', '$.inactive') WHERE id = ?").bind(id),
+    env.DB.prepare("UPDATE players SET extra_json = json_set(extra_json, '$.variantOf', ?) WHERE id <> ? AND (id = ? OR json_extract(extra_json, '$.variantOf') = ?)")
+      .bind(id, id, row.main, row.main),
+  ]);
+  return Response.json({ ok: true });
+}
+
 // shortcut: replaced or deleted images stay in R2, add a sweep if the bucket grows
 async function write(env: Env, request: Request, kind: string, id: string): Promise<Response> {
   const del = request.method === "DELETE";
@@ -327,6 +339,14 @@ export default {
       if (!user) return Response.json([]);
       const rows = await env.DB.prepare("SELECT player_id FROM user_cards WHERE user_id = ?").bind(user.id).all<{ player_id: string }>();
       return Response.json(rows.results.map((r) => r.player_id));
+    }
+    const promoteMatch = url.pathname.match(/^\/api\/players\/([^/]+)\/promote$/);
+    if (promoteMatch) {
+      if (!(await currentUser(env, request))?.admin) return bad("sem permissão", 403);
+      if (request.method !== "POST") return bad("método não suportado", 405);
+      const id = decodeURIComponent(promoteMatch[1]);
+      if (!ID_RE.test(id)) return bad("id inválido");
+      return promote(env, id);
     }
     const admin = url.pathname.match(/^\/api\/(players|teams|heroes|settings|upload)\/([^/]+)$/);
     if (admin) {
