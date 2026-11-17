@@ -21,6 +21,12 @@ import { Profile } from "./views/Profile";
 import { easeOut } from "./lib/ui";
 import { Settings } from "./views/Settings";
 import { profileUrl } from "./lib/profile";
+import { Intro, type IntroTarget } from "./components/Intro";
+
+// A intro abre uma vez por sessão, só para quem entra pelo início do site.
+const INTRO_KEY = "intro-seen";
+const introSeen = () => { try { return sessionStorage.getItem(INTRO_KEY) === "1"; } catch { return false; } };
+const markIntroSeen = () => { try { sessionStorage.setItem(INTRO_KEY, "1"); } catch { /* sem storage */ } };
 
 const REPO = "https://github.com/hagizao/deadcards";
 
@@ -258,6 +264,19 @@ function Shell() {
   const openTeam = (id: string) => { setFocusTeam(id); setTab("teams"); };
   const editCard = (id: string) => { setSpotlight(null); setEditId(id); setTab("editor"); };
   const openProfile = (id: string) => { setProfileId(id); setTab("profile"); };
+  const [intro, setIntro] = useState(() => location.pathname === "/" && !location.search && !introSeen());
+  const closeIntro = () => { markIntroSeen(); setIntro(false); };
+  const pickIntro = (target: IntroTarget) => {
+    closeIntro();
+    if (target === "profile" || target === "settings") {
+      if (!me) { location.href = "/login"; return; }
+      if (target === "profile") openProfile(me.handle ?? me.id);
+      else setTab("settings");
+      return;
+    }
+    setFocusTeam(undefined);
+    setTab(target);
+  };
   useEffect(() => { window.scrollTo(0, 0); }, [tab, profileId]);
   const [linkResult, setLinkResult] = useState<LinkResult>();
   useEffect(() => {
@@ -341,6 +360,8 @@ function Shell() {
           {t.notAffiliated}
         </p>
       </footer>
+
+      {intro && <Intro onPick={pickIntro} onClose={closeIntro} />}
 
       <AnimatePresence>
         {spotlight && <Spotlight key="spotlight" playerId={spotlight} onClose={() => setSpotlight(null)} onSwitch={setSpotlight} onEdit={me?.admin ? editCard : undefined} />}
