@@ -132,6 +132,18 @@ async function upload(env: Env, request: Request, folder: string): Promise<Respo
   return Response.json({ url: `/img/${key}` });
 }
 
+async function promote(env: Env, id: string): Promise<Response> {
+  const row = await env.DB.prepare("SELECT json_extract(extra_json, '$.variantOf') AS main FROM players WHERE id = ?").bind(id).first<{ main: string | null }>();
+  if (!row) return bad("carta não encontrada", 404);
+  if (!row.main || row.main === id) return bad("esta carta já é a principal");
+  await env.DB.batch([
+    env.DB.prepare("UPDATE players SET extra_json = json_remove(extra_json, '$.variantOf', '$.inactive') WHERE id = ?").bind(id),
+    env.DB.prepare("UPDATE players SET extra_json = json_set(extra_json, '$.variantOf', ?) WHERE id <> ? AND (id = ? OR json_extract(extra_json, '$.variantOf') = ?)")
+      .bind(id, id, row.main, row.main),
+  ]);
+  return Response.json({ ok: true });
+}
+
 // shortcut: replaced or deleted images stay in R2, add a sweep if the bucket grows
 async function write(env: Env, request: Request, kind: string, id: string): Promise<Response> {
   const del = request.method === "DELETE";
@@ -144,9 +156,20 @@ async function write(env: Env, request: Request, kind: string, id: string): Prom
     if (owned) return bad("há cartas resgatadas por usuários; marque como inativo em vez de apagar", 409);
   }
   if (kind === "players") {
-    if (del) await db.prepare("DELETE FROM players WHERE id = ?").bind(id).run();
-    else {
+    const hasVersions = () => db.prepare("SELECT 1 FROM players WHERE json_extract(extra_json, '$.variantOf') = ? AND id <> ? LIMIT 1").bind(id, id).first();
+    if (del) {
+      if (await hasVersions()) return bad("esta carta tem versões; apague ou mova as versões antes", 409);
+      await db.prepare("DELETE FROM players WHERE id = ?").bind(id).run();
+    } else {
       if (!b.name || !b.teamId || !b.stats) return bad("jogador incompleto");
+      if (b.variantOf === "" || b.variantOf === null || b.variantOf === id) delete b.variantOf;
+      if (b.variantOf !== undefined) {
+        if (typeof b.variantOf !== "string") return bad("versão inválida");
+        const main = await db.prepare("SELECT json_extract(extra_json, '$.variantOf') AS v FROM players WHERE id = ?").bind(b.variantOf).first<{ v: string | null }>();
+        if (!main) return bad("a carta principal escolhida não existe");
+        if (main.v && main.v !== b.variantOf) return bad("escolha a carta principal do jogador, não uma versão");
+        if (await hasVersions()) return bad("esta carta é a principal de outras versões; troque a principal antes", 409);
+      }
       if (b.art && typeof b.art === "object") {
         const credit = artCredit((b.art as { credit?: unknown }).credit);
         if (credit === null) return bad("crédito da arte inválido: nome até 60 caracteres e link http(s)");
@@ -316,6 +339,14 @@ export default {
       if (!user) return Response.json([]);
       const rows = await env.DB.prepare("SELECT player_id FROM user_cards WHERE user_id = ?").bind(user.id).all<{ player_id: string }>();
       return Response.json(rows.results.map((r) => r.player_id));
+    }
+    const promoteMatch = url.pathname.match(/^\/api\/players\/([^/]+)\/promote$/);
+    if (promoteMatch) {
+      if (!(await currentUser(env, request))?.admin) return bad("sem permissão", 403);
+      if (request.method !== "POST") return bad("método não suportado", 405);
+      const id = decodeURIComponent(promoteMatch[1]);
+      if (!ID_RE.test(id)) return bad("id inválido");
+      return promote(env, id);
     }
     const admin = url.pathname.match(/^\/api\/(players|teams|heroes|settings|upload)\/([^/]+)$/);
     if (admin) {
