@@ -8,7 +8,7 @@
 .rail {
   --rw: 84px;                 /* largura da carta (altura vem da proporção do verso) */
   --peek: 34px;               /* quanto da carta aparece quando está escondida */
-  --rail-gold: #d8a640;
+  --rail-gold: var(--color-dl-gold, #d8a640);
   --rail-cream: var(--color-dl-text, #ffefd7);
   --rail-black: var(--color-dl-black, #10130d);
   --rail-ease: var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
@@ -109,7 +109,7 @@
 .rail-front svg * { vector-effect: non-scaling-stroke; }
 /* índice no canto de cima à direita: é o que fica à mostra com a carta escondida */
 .rail-index { position: absolute; top: 9px; right: 8px; width: 18px; height: 18px; stroke-width: 2px; }
-.rail-card[aria-current="page"] .rail-index { color: #8a6a28; }
+.rail-card[aria-current="page"] .rail-index { color: var(--color-dl-gold-dim, #8a6a28); }
 .rail-art { flex: 1; width: 46%; stroke-width: 1.75px; }
 /* escondida, a carta mostra só o índice do canto; o ícone grande e o nome aparecem quando ela abre */
 .rail-art,

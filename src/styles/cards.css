@@ -2,14 +2,14 @@
        2. PALETA FILM-NOIR PRATA PLATINA & CARVÃO + GLASSMORPHISM
        ========================================================================== */
     :root {
-      --noir-charcoal: #09090b;
-      --noir-surface: rgba(18, 18, 22, 0.72);
-      --noir-surface-strong: rgba(14, 14, 17, 0.88);
+      --noir-charcoal: #0c0d10;
+      --noir-surface: rgba(21, 23, 28, 0.72);
+      --noir-surface-strong: rgba(16, 17, 21, 0.9);
       --platinum-bright: #f4f4f5;
       --platinum-mid: #d4d4d8;
       --platinum-muted: #a1a1aa;
-      --platinum-border: rgba(228, 228, 231, 0.16);
-      --platinum-border-hover: rgba(244, 244, 245, 0.55);
+      --platinum-border: rgba(216, 166, 64, 0.2);     /* filete dourado, como a moldura da porta da intro */
+      --platinum-border-hover: rgba(216, 166, 64, 0.6);
     }
 
     html, body {
@@ -30,7 +30,8 @@
     /* O fundo escuro fica somente no <html>. Se o <body> também tivesse cor sólida,
        ela seria pintada POR CIMA da camada fixa #bg-stage (z-index negativo) e a aba
        "Fundo" não mostraria nada. */
-    html { background-color: #09090b; }
+    /* mesmo fundo da intro: tinta azul-escura com uma luz suave no alto */
+    html { background: radial-gradient(80% 55% at 50% 0%, #1b1e26 0%, #0c0d10 72%) fixed, #0c0d10; }
     body { background: transparent; }
 
     /* Painéis Glassmorphism Translúcidos */
@@ -132,40 +133,30 @@
     /* ==========================================================================
        3. CABEÇALHO INTERATIVO "DEADLOCK CARDS"
        ========================================================================== */
+    /* Marca do cabeçalho: a roda dourada da porta da intro com "CARDS" creme e "LOCK" dourado.
+       No hover a roda gira um oitavo de volta, como a trava da porta. */
     .brand-badge {
       cursor: pointer;
       position: relative;
-      /* cores vêm do herói da tela inicial (ver updateBrandColors); padrão neutro até calcular */
-      --brand-c1: 63, 63, 70;
-      --brand-c2: 24, 24, 27;
-      background: linear-gradient(135deg, rgba(var(--brand-c1), 0.62) 0%, rgba(var(--brand-c2), 0.62) 100%);
-      border: 1px solid rgba(228, 228, 231, 0.3);
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5), 0 0 18px rgba(var(--brand-c1), 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-      transition: transform 0.2s var(--ease-out),
-                  border-color 0.2s ease,
-                  box-shadow 0.2s ease;
+      background-color: transparent;
+      border: 1px solid transparent;
+      transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.16s var(--ease-out);
       user-select: none;
     }
-
-    .brand-badge:focus-visible { transform: translateY(-1.5px) scale(1.03); }
-    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-      .brand-badge:hover { transform: translateY(-1.5px) scale(1.03); }
+    .brand-badge .brand-mark {
+      filter: drop-shadow(0 0 6px rgba(216, 166, 64, 0.35));
+      transition: rotate 0.28s var(--ease-out);
     }
-
     .brand-badge:hover,
     .brand-badge:focus-visible {
-      border-color: rgba(244, 244, 245, 0.78);
-      background: linear-gradient(135deg, rgba(var(--brand-c1), 0.82) 0%, rgba(var(--brand-c2), 0.82) 100%);
-      box-shadow: 0 0 26px rgba(var(--brand-c1), 0.45),
-                  0 0 26px rgba(var(--brand-c2), 0.3),
-                  0 8px 24px rgba(0, 0, 0, 0.7),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.32);
-      outline: none;
+      border-color: rgba(216, 166, 64, 0.35);
+      background-color: rgba(216, 166, 64, 0.06);
     }
-
-    .brand-badge:active {
-      transform: translateY(0) scale(0.99);
+    .brand-badge:focus-visible { outline: 2px solid var(--color-dl-gold, #d8a640); outline-offset: 2px; }
+    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+      .brand-badge:hover .brand-mark { rotate: 45deg; }
     }
+    .brand-badge:active { transform: scale(0.97); }
 
     /* ==========================================================================
        4. ESTILIZAÇÃO DA CARTA DEADLOCK (PROPORÇÃO SHIELD) + OVERLAY DE HOVER

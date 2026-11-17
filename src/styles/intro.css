@@ -8,11 +8,11 @@
    ========================================================================== */
 
 .intro {
-  --in-ink: #0c0d10;
+  --in-ink: var(--color-dl-ink, #0c0d10);
   --in-line: var(--color-dl-text, #ffefd7);
   --in-black: var(--color-dl-black, #10130d);
-  --in-gold: #d8a640;
-  --in-gold-dim: #8a6a28;
+  --in-gold: var(--color-dl-gold, #d8a640);
+  --in-gold-dim: var(--color-dl-gold-dim, #8a6a28);
   --in-mute: #a1a1aa;
   --in-ease: var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
 

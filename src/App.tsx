@@ -23,6 +23,7 @@ import { Settings } from "./views/Settings";
 import { profileUrl } from "./lib/profile";
 import { Intro } from "./components/Intro";
 import { Rail } from "./components/Rail";
+import { BrandMark } from "./components/BrandMark";
 import type { MenuTarget } from "./lib/menu";
 
 // A intro abre uma vez por sessão, só para quem entra pelo início do site.
@@ -240,7 +241,7 @@ function Background() {
         />
       )}
       <div className="absolute inset-0" style={{ background: hexToRgba(bg.color, bg.overlayOpacity / 100) }} />
-      <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 15%, rgba(255,255,255,0.03) 0%, rgba(9,9,11,0.72) 100%)" }} />
+      <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 15%, rgba(255,255,255,0.03) 0%, rgba(12,13,16,0.72) 100%)" }} />
     </div>
   );
 }
@@ -286,11 +287,15 @@ function Shell() {
   return (
     <>
       <Background />
-      <header className="noir-glass sticky top-0 z-40 border-b border-zinc-200/15">
+      <header className="noir-glass sticky top-0 z-40 border-b border-dl-gold/20">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-6 lg:px-8">
-          <button type="button" onClick={() => setTab("home")} className="brand-badge flex shrink-0 items-center gap-3 rounded-xl px-4 py-2.5 text-left sm:px-6 sm:py-3">
-            <span className="size-2.5 rounded-full bg-zinc-100 shadow-[0_0_12px_rgba(255,255,255,0.9)]" />
-            <span className="font-display text-base font-extrabold tracking-[0.18em] text-zinc-100 uppercase sm:text-xl"><span className="sm:hidden">CL</span><span className="hidden sm:inline">Cardslock</span></span>
+          {/* marca igual à da intro: a roda dourada da porta, "CARDS" em creme e "LOCK" em dourado */}
+          <button type="button" onClick={() => setTab("home")} aria-label="Cardslock" className="brand-badge flex shrink-0 items-center gap-2.5 rounded-xl px-2 py-1.5 text-left sm:gap-3 sm:px-3">
+            <BrandMark className="brand-mark size-8 text-dl-gold sm:size-9" />
+            <span className="font-display text-lg font-extrabold tracking-[0.07em] text-dl-text uppercase sm:text-2xl">
+              <span className="sm:hidden">C<span className="text-dl-gold">L</span></span>
+              <span className="hidden sm:inline">Cards<span className="text-dl-gold">lock</span></span>
+            </span>
           </button>
           <div className="flex items-center gap-3">
             <LangMenu />
@@ -325,7 +330,7 @@ function Shell() {
             </motion.div>
         </main>
 
-        <footer className="mt-6 border-t border-zinc-200/10">
+        <footer className="mt-6 border-t border-dl-gold/15">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-zinc-400 sm:px-6 lg:px-8">
             <a href={REPO} target="_blank" rel="noreferrer" className="flex items-center gap-2 font-bold tracking-wider text-zinc-300 uppercase hover:text-white">
               <GitHubIcon /> {t.github}

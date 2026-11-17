@@ -18,15 +18,19 @@
   font-display: swap;
 }
 
-/* Tokens do Deadlock (Panorama citadel_base_styles.css): offWhite, offBlack e o degradê do .ButtonBevel */
+/* Tokens do Deadlock (Panorama citadel_base_styles.css): offWhite e offBlack.
+   Paleta da intro do dealer: tinta azul-escura (dl-ink) e dourado (dl-gold), também no degradê dos botões (dl-bevel). */
 @theme {
   --font-display: 'VALVE Pulp', 'VALVE Oracle', ui-sans-serif, system-ui, sans-serif;
   --color-dl-text: #ffefd7;
   --color-dl-black: #10130d;
-  --color-dl-bevel-from: #373d45;
-  --color-dl-bevel-to: #4d5860;
-  --color-dl-bevel-hover-from: #4c5561;
-  --color-dl-bevel-hover-to: #6c7d88;
+  --color-dl-ink: #0c0d10;
+  --color-dl-gold: #d8a640;
+  --color-dl-gold-dim: #8a6a28;
+  --color-dl-bevel-from: #262a32;
+  --color-dl-bevel-to: #181a20;
+  --color-dl-bevel-hover-from: #3b3327;
+  --color-dl-bevel-hover-to: #241f17;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 

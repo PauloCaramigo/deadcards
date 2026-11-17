@@ -47,4 +47,5 @@ Fonte do design system: `src/index.css` (tokens `@theme`, `noir-glass`, `noir-gl
 - Cores de estado (erro, sucesso, destaque) viram tokens no `@theme`?
 - Raridade e região só existem em TS e em classes. Viram tokens CSS?
 - `pill` e `field` não têm estado desabilitado no código; o guia propõe opacidade 50%.
+- Paleta da intro levada ao site: tokens novos `dl-ink` (#0c0d10), `dl-gold` (#d8a640) e `dl-gold-dim`; `dl-bevel` deixou os valores do Panorama e virou um degradê escuro (dourado no hover); superfícies `noir-*` puxadas para a tinta azul-escura e `platinum-border` virou filete dourado. Adotar como identidade ou voltar aos valores do Panorama?
 - Intro "Dealer" (porta com trava, mesa e deck em `src/components/Intro.tsx`): o tema de dealer conversa com a regra de nunca parecer cassino? A intro não tem moeda, aposta nem loja; a placa diz "Dealer". Manter, trocar o texto da placa ou suavizar?

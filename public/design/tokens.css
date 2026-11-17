@@ -19,21 +19,24 @@
   --font-display: 'VALVE Pulp', 'VALVE Oracle', ui-sans-serif, system-ui, sans-serif;
   --color-dl-text: #ffefd7;
   --color-dl-black: #10130d;
-  --color-dl-bevel-from: #373d45;
-  --color-dl-bevel-to: #4d5860;
-  --color-dl-bevel-hover-from: #4c5561;
-  --color-dl-bevel-hover-to: #6c7d88;
+  --color-dl-ink: #0c0d10;
+  --color-dl-gold: #d8a640;
+  --color-dl-gold-dim: #8a6a28;
+  --color-dl-bevel-from: #262a32;
+  --color-dl-bevel-to: #181a20;
+  --color-dl-bevel-hover-from: #3b3327;
+  --color-dl-bevel-hover-to: #241f17;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
   /* src/styles/cards.css :root */
-  --noir-charcoal: #09090b;
-  --noir-surface: rgba(18, 18, 22, 0.72);
-  --noir-surface-strong: rgba(14, 14, 17, 0.88);
+  --noir-charcoal: #0c0d10;
+  --noir-surface: rgba(21, 23, 28, 0.72);
+  --noir-surface-strong: rgba(16, 17, 21, 0.9);
   --platinum-bright: #f4f4f5;
   --platinum-mid: #d4d4d8;
   --platinum-muted: #a1a1aa;
-  --platinum-border: rgba(228, 228, 231, 0.16);
-  --platinum-border-hover: rgba(244, 244, 245, 0.55);
+  --platinum-border: rgba(216, 166, 64, 0.2);
+  --platinum-border-hover: rgba(216, 166, 64, 0.6);
 
   /* src/lib/rarity.ts RARITY_TIERS */
   --rarity-eternus-c: #38e8ff;   --rarity-eternus-hi: #e8fdff;   --rarity-eternus-lo: #0b6f9e;

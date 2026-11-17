@@ -424,7 +424,7 @@ function TeamsForm() {
   );
 }
 
-const DEFAULT_BG: BgSettings = { enabled: true, color: "#09090b", imageOpacity: 60, overlayOpacity: 55, blur: 0, size: "cover" };
+const DEFAULT_BG: BgSettings = { enabled: true, color: "#0c0d10", imageOpacity: 60, overlayOpacity: 55, blur: 0, size: "cover" };
 
 function BgFields({ bg, onChange, folder, title }: { bg?: BgSettings; onChange: (bg: BgSettings | undefined) => void; folder: "bg" | "teams"; title: string }) {
   const b = bg ?? DEFAULT_BG;
