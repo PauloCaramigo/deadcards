@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useAnimate } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, useData } from "../lib/data";
-import { DEFAULT_TIER_CONFIG, POSITIONS, REGIONS, STAT_KEYS, calculateOVR, getPlayerHistory, getPlayerOvr, isMainCard } from "../lib/cards";
+import { DEFAULT_TIER_CONFIG, POSITIONS, REGIONS, STAT_KEYS, calculateOVR, cardVersions, getPlayerHistory, getPlayerOvr, isMainCard } from "../lib/cards";
 import { FRAME_PRESETS, getCardTier, type Tier } from "../lib/rarity";
 import type { BgSettings, Player, Stats, Team, TierBand } from "../lib/types";
 import { Card } from "../components/Card";
@@ -22,6 +22,7 @@ const input = "w-full rounded-xl bg-zinc-950/80 border border-zinc-200/20 focus:
 const btn = "px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed";
 const primary = `${btn} bg-zinc-100 hover:bg-white text-zinc-950`;
 const ghost = `${btn} border border-zinc-200/20 text-zinc-300 hover:text-white bg-zinc-900/60`;
+const chip = `${btn} min-h-11 sm:min-h-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white active:opacity-80`;
 const danger = `${btn} bg-red-600/90 hover:bg-red-500 text-white`;
 const today = () => new Date().toISOString().slice(0, 10);
 const newId = (p: string) => `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -83,10 +84,22 @@ function Toast({ msg }: { msg: string }) {
 export function Editor({ editId, onEditId }: { editId: string | null; onEditId: (id: string | null) => void }) {
   const [section, setSection] = useState<Section>("card");
   const [prevEditId, setPrevEditId] = useState(editId);
+  const [versionOf, setVersionOf] = useState<string | null>(null);
   if (editId !== prevEditId) {
     setPrevEditId(editId);
-    if (editId) setSection("card");
+    if (editId) {
+      setSection("card");
+      setVersionOf(null);
+    }
   }
+  const pick = (id: string | null) => {
+    setVersionOf(null);
+    onEditId(id);
+  };
+  const newVersion = (mainId: string) => {
+    setVersionOf(mainId);
+    onEditId(null);
+  };
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
@@ -99,7 +112,7 @@ export function Editor({ editId, onEditId }: { editId: string | null; onEditId: 
       </div>
       <AnimatePresence mode="wait">
         <motion.div key={section} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.22 }}>
-          {section === "card" && <PlayerForm key={editId ?? "new"} editId={editId} onEditId={onEditId} />}
+          {section === "card" && <PlayerForm key={editId ?? (versionOf ? `new:${versionOf}` : "new")} editId={editId} onEditId={pick} versionOf={versionOf} onNewVersion={newVersion} />}
           {section === "teams" && <TeamsForm />}
           {section === "heroes" && <HeroesForm />}
           {section === "look" && <LookForm />}
@@ -125,10 +138,15 @@ function withHistory(p: Player, date: string, rebase: boolean): Player {
   return { ...p, ovr, history };
 }
 
-function PlayerForm({ editId, onEditId }: { editId: string | null; onEditId: (id: string | null) => void }) {
+function PlayerForm({ editId, onEditId, versionOf, onNewVersion }: { editId: string | null; onEditId: (id: string | null) => void; versionOf: string | null; onNewVersion: (mainId: string) => void }) {
   const { players, teams, heroNames, heroIcon, settings, reload } = useData();
   const existing = editId ? players.find((p) => p.id === editId) : undefined;
-  const [d, setD] = useState<Player>(() => (existing ? structuredClone({ ...existing, ovr: getPlayerOvr(existing) }) : blankPlayer(teams[0]?.id ?? "")));
+  const base = !existing && versionOf ? players.find((p) => p.id === versionOf) : undefined;
+  const [d, setD] = useState<Player>(() => {
+    if (existing) return structuredClone({ ...existing, ovr: getPlayerOvr(existing) });
+    if (base) return { ...structuredClone(base), ovr: getPlayerOvr(base), id: "", variantOf: base.id, history: [], inactive: undefined, special: true };
+    return blankPlayer(teams[0]?.id ?? "");
+  });
   const [date, setDate] = useState(today);
   const [rebase, setRebase] = useState(false);
   const [heroQuery, setHeroQuery] = useState("");
@@ -147,6 +165,9 @@ function PlayerForm({ editId, onEditId }: { editId: string | null; onEditId: (id
     if (!d.id) return;
     run(async () => { await api.remove("players", d.id); onEditId(null); }, "Carta excluída.");
   };
+  const main = existing ? players.find((p) => p.id === (existing.variantOf || existing.id)) ?? existing : base;
+  const versions = main ? cardVersions(players, main) : [];
+  const tagOf = (p: Player) => teams.find((t) => t.id === p.teamId)?.tag ?? "?";
 
   if (!teams.length) return <p className="text-zinc-300">Crie um time na aba Times antes de criar cartas.</p>;
 
@@ -156,15 +177,27 @@ function PlayerForm({ editId, onEditId }: { editId: string | null; onEditId: (id
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <span className="rk-chip">{d.id ? "Modo Edição" : "Modo Criação"}</span>
-            <h2 className="mt-2 text-2xl font-black tracking-[0.12em] text-white uppercase">{d.id ? `Editar: ${existing?.name ?? d.name}` : "Criar Nova Carta"}</h2>
+            <h2 className="mt-2 text-2xl font-black tracking-[0.12em] text-white uppercase">{d.id ? `Editar: ${existing?.name ?? d.name}` : base ? `Nova versão de ${base.name}` : "Criar Novo Jogador"}</h2>
           </div>
-          <div className="flex gap-2">
-            <select className={`${input} w-auto`} value={editId ?? ""} onChange={(e) => onEditId(e.target.value || null)} aria-label="Carregar carta">
-              <option value="">+ Nova carta</option>
-              {players.map((p) => <option key={p.id} value={p.id}>{p.name} · {teams.find((t) => t.id === p.teamId)?.tag ?? "?"}{p.inactive ? " (versão)" : ""}</option>)}
-            </select>
-          </div>
+          <select className={`${input} min-h-11 w-auto sm:min-h-0`} value={main && isMainCard(main) ? main.id : ""} onChange={(e) => onEditId(e.target.value || null)} aria-label="Jogador">
+            <option value="">+ Novo jogador</option>
+            {players.filter(isMainCard).sort((a, b) => a.name.localeCompare(b.name)).map((p) => <option key={p.id} value={p.id}>{p.name} · {tagOf(p)}</option>)}
+          </select>
         </div>
+
+        {main && (
+          <div className="flex flex-wrap gap-2">
+            {versions.map((c) => {
+              const active = c.id === d.id;
+              return (
+                <button key={c.id} type="button" aria-pressed={active} onClick={() => onEditId(c.id)} className={`${chip} ${active ? "bg-zinc-100 text-zinc-950" : "border border-zinc-200/20 bg-zinc-900/60 text-zinc-300 hover:text-white"}`}>
+                  {isMainCard(c) ? "Principal" : c.special ? "Especial" : "Versão"} · {tagOf(c)} · {getPlayerOvr(c)}
+                </button>
+              );
+            })}
+            <button type="button" className={`${chip} border border-zinc-200/20 bg-zinc-900/60 text-zinc-300 hover:text-white`} onClick={() => onNewVersion(main.id)}>+ Nova versão</button>
+          </div>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Nome"><input className={input} value={d.name} maxLength={40} onChange={(e) => set({ name: e.target.value })} placeholder="NOVO JOGADOR" /></Field>
@@ -180,12 +213,16 @@ function PlayerForm({ editId, onEditId }: { editId: string | null; onEditId: (id
           </Field>
           <Field label="Data do registro"><input type="date" className={input} value={date} onChange={(e) => setDate(e.target.value || today())} /></Field>
           <div className="sm:col-span-2">
-            <Field label="Versão de (vazio = carta principal)">
-              <select className={input} value={d.variantOf ?? ""} onChange={(e) => set({ variantOf: e.target.value || undefined })}>
-                <option value="">Carta principal</option>
-                {players.filter((p) => isMainCard(p) && p.id !== d.id).map((p) => <option key={p.id} value={p.id}>{p.name} · {teams.find((t) => t.id === p.teamId)?.tag ?? "?"} · {getPlayerOvr(p)}</option>)}
-              </select>
-            </Field>
+            {!isMainCard(d) || cardVersions(players, d).length <= 1 ? (
+              <Field label="Jogador desta versão (vazio = carta principal)">
+                <select className={input} value={d.variantOf ?? ""} onChange={(e) => set({ variantOf: e.target.value || undefined })}>
+                  <option value="">Carta principal</option>
+                  {players.filter((p) => isMainCard(p) && p.id !== d.id).map((p) => <option key={p.id} value={p.id}>{p.name} · {tagOf(p)} · {getPlayerOvr(p)}</option>)}
+                </select>
+              </Field>
+            ) : (
+              <p className="text-xs text-zinc-400">Carta principal de {cardVersions(players, d).length - 1} versões. Para trocar, abra uma versão e use Tornar principal.</p>
+            )}
           </div>
         </div>
 
@@ -286,7 +323,8 @@ function PlayerForm({ editId, onEditId }: { editId: string | null; onEditId: (id
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" className={primary} disabled={busy} onClick={save}>{busy ? "Salvando…" : "Salvar carta"}</button>
           {d.id && <HoldButton className={danger} disabled={busy} onConfirm={remove} label={`Excluir a carta de ${d.name}`}>Segure p/ excluir</HoldButton>}
-          {d.id && <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" checked={!!d.inactive} onChange={(e) => set({ inactive: e.target.checked || undefined })} className="accent-zinc-100" />Fora do elenco (versão guardada)</label>}
+          {d.id && !isMainCard(d) && <button type="button" className={ghost} disabled={busy} onClick={() => run(async () => { await api.promote(d.id); onEditId(d.id); }, `${d.name} agora é a carta principal.`)}>Tornar principal</button>}
+          {d.id && isMainCard(d) && <label className="flex items-center gap-2 text-sm text-zinc-300"><input type="checkbox" checked={!!d.inactive} onChange={(e) => set({ inactive: e.target.checked || undefined })} className="accent-zinc-100" />Fora do elenco (versão guardada)</label>}
           <Toast msg={msg} />
         </div>
       </div>
