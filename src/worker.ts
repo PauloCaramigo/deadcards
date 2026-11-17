@@ -144,9 +144,20 @@ async function write(env: Env, request: Request, kind: string, id: string): Prom
     if (owned) return bad("há cartas resgatadas por usuários; marque como inativo em vez de apagar", 409);
   }
   if (kind === "players") {
-    if (del) await db.prepare("DELETE FROM players WHERE id = ?").bind(id).run();
-    else {
+    const hasVersions = () => db.prepare("SELECT 1 FROM players WHERE json_extract(extra_json, '$.variantOf') = ? AND id <> ? LIMIT 1").bind(id, id).first();
+    if (del) {
+      if (await hasVersions()) return bad("esta carta tem versões; apague ou mova as versões antes", 409);
+      await db.prepare("DELETE FROM players WHERE id = ?").bind(id).run();
+    } else {
       if (!b.name || !b.teamId || !b.stats) return bad("jogador incompleto");
+      if (b.variantOf === "" || b.variantOf === null || b.variantOf === id) delete b.variantOf;
+      if (b.variantOf !== undefined) {
+        if (typeof b.variantOf !== "string") return bad("versão inválida");
+        const main = await db.prepare("SELECT json_extract(extra_json, '$.variantOf') AS v FROM players WHERE id = ?").bind(b.variantOf).first<{ v: string | null }>();
+        if (!main) return bad("a carta principal escolhida não existe");
+        if (main.v && main.v !== b.variantOf) return bad("escolha a carta principal do jogador, não uma versão");
+        if (await hasVersions()) return bad("esta carta é a principal de outras versões; troque a principal antes", 409);
+      }
       if (b.art && typeof b.art === "object") {
         const credit = artCredit((b.art as { credit?: unknown }).credit);
         if (credit === null) return bad("crédito da arte inválido: nome até 60 caracteres e link http(s)");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeRoster } from "../src/lib/cards";
+import { activeRoster, isRosterCard } from "../src/lib/cards";
 import type { Player } from "../src/lib/types";
 
 const card = (id: string, teamId: string, extra: Partial<Player> = {}) =>
@@ -16,5 +16,20 @@ describe("Elenco do time", () => {
     ];
     expect(activeRoster(players, "bra").map((p) => p.id)).toEqual(["main", "national"]);
     expect(activeRoster(players, "lev").map((p) => p.id)).toEqual(["club"]);
+  });
+
+  it("isRosterCard separa versões do mesmo time, inativas e principais", () => {
+    const players = [
+      card("main", "bra"),
+      card("special", "bra", { variantOf: "main" }),
+      card("club", "lev"),
+      card("national", "bra", { variantOf: "club" }),
+      card("old", "bra", { inactive: true }),
+    ];
+    const roster = (id: string) => isRosterCard(players, players.find((p) => p.id === id)!);
+    expect(roster("main")).toBe(true);
+    expect(roster("special")).toBe(false);
+    expect(roster("national")).toBe(true);
+    expect(roster("old")).toBe(false);
   });
 });

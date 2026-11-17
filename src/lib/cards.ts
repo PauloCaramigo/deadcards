@@ -62,10 +62,14 @@ export function getPlayerTrend(p: Player): number {
   return last.base ? 0 : last.ovr - h[h.length - 2].ovr;
 }
 
-export function activeRoster(players: Player[], teamId: string): Player[] {
+export function isRosterCard(players: Player[], p: Player): boolean {
+  if (p.inactive) return false;
   // Versão no mesmo time da carta principal é o mesmo jogador: fica fora do elenco e da média do time.
-  const sameTeamVersion = (p: Player) => !isMainCard(p) && players.some((m) => m.id === p.variantOf && m.teamId === p.teamId);
-  return players.filter((p) => p.teamId === teamId && !p.inactive && !sameTeamVersion(p));
+  return isMainCard(p) || !players.some((m) => m.id === p.variantOf && m.teamId === p.teamId);
+}
+
+export function activeRoster(players: Player[], teamId: string): Player[] {
+  return players.filter((p) => p.teamId === teamId && isRosterCard(players, p));
 }
 
 export function teamOvr(players: Player[], teamId: string) {
