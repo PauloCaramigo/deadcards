@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeRoster, isRosterCard } from "../src/lib/cards";
+import { activeRoster, cardVersions, isRosterCard } from "../src/lib/cards";
 import type { Player } from "../src/lib/types";
 
 const card = (id: string, teamId: string, extra: Partial<Player> = {}) =>
@@ -31,5 +31,23 @@ describe("Elenco do time", () => {
     expect(roster("special")).toBe(false);
     expect(roster("national")).toBe(true);
     expect(roster("old")).toBe(false);
+  });
+});
+
+describe("cardVersions", () => {
+  const players = [
+    card("sp", "bra", { variantOf: "main" }),
+    card("main", "bra"),
+    card("other", "lev"),
+    card("otherVersion", "lev", { variantOf: "other" }),
+  ];
+  const ids = (id: string) => cardVersions(players, players.find((p) => p.id === id)!).map((p) => p.id);
+
+  it("põe a principal primeiro e não mistura outro jogador", () => {
+    expect(ids("main")).toEqual(["main", "sp"]);
+  });
+
+  it("chamada por uma versão devolve o mesmo grupo", () => {
+    expect(ids("sp")).toEqual(["main", "sp"]);
   });
 });

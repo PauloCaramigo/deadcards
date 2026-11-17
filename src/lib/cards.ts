@@ -68,6 +68,11 @@ export function isRosterCard(players: Player[], p: Player): boolean {
   return isMainCard(p) || !players.some((m) => m.id === p.variantOf && m.teamId === p.teamId);
 }
 
+export function cardVersions(players: Player[], p: Player): Player[] {
+  const main = isMainCard(p) ? p.id : p.variantOf!;
+  return players.filter((c) => c.id === main || c.variantOf === main).sort((a, b) => Number(!isMainCard(a)) - Number(!isMainCard(b)));
+}
+
 export function activeRoster(players: Player[], teamId: string): Player[] {
   return players.filter((p) => p.teamId === teamId && isRosterCard(players, p));
 }
