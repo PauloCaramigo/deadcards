@@ -1,0 +1,432 @@
+/* ==========================================================================
+   INTRO "DEALER" (src/components/Intro.tsx)
+   Coreografia em fases controlada pelo componente, uma classe por fase no .intro:
+   is-unlock (a trava gira) → is-open (a porta abre) → is-lit (luz na mesa)
+   → is-deck (o deck surge) → is-dealt (as cartas abrem em leque e viram) → is-ready.
+   Fica em CSS próprio porque é efeito: 3D da porta, keyframes e a virada das cartas.
+   Arte (desenho e verso da carta) feita à mão, em public/intro/.
+   ========================================================================== */
+
+.intro {
+  --in-ink: #0c0d10;
+  --in-line: var(--color-dl-text, #ffefd7);
+  --in-black: var(--color-dl-black, #10130d);
+  --in-gold: #d8a640;
+  --in-gold-dim: #8a6a28;
+  --in-mute: #a1a1aa;
+  --in-ease: var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  background: radial-gradient(75% 65% at 50% 42%, #1b1e26 0%, var(--in-ink) 72%), var(--in-ink);
+  color: var(--in-line);
+  overflow: hidden;
+}
+
+/* ---------- porta ---------- */
+.intro-door {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  perspective: 1600px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.intro.is-gone .intro-door { display: none; }
+
+.intro-glow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vmax;
+  translate: -50% 0;
+  background: radial-gradient(closest-side at 50% 50%, rgb(255 238 190 / 0.98) 0%, rgb(240 190 90 / 0.55) 26%, rgb(216 166 64 / 0.18) 56%, transparent 82%);
+  scale: 0.01 1;
+  opacity: 0;
+  transition: scale 0.7s ease-out, opacity 0.5s;
+}
+
+.intro-leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(45deg, rgb(216 166 64 / 0.06) 0 1px, transparent 1px 26px),
+    repeating-linear-gradient(-45deg, rgb(216 166 64 / 0.06) 0 1px, transparent 1px 26px),
+    linear-gradient(180deg, #171a20, #0b0c0f);
+  box-shadow: inset 0 0 0 1px rgb(216 166 64 / 0.5), inset 0 0 0 12px #0e1014, inset 0 0 0 13px rgb(216 166 64 / 0.3);
+  transition: transform 2.1s cubic-bezier(0.6, 0.05, 0.25, 1), filter 2.1s ease-in;
+}
+.intro-leaf.is-left { left: 0; transform-origin: 0 50%; }
+.intro-leaf.is-right { right: 0; transform-origin: 100% 50%; }
+
+/* a roda é desenhada inteira nas duas folhas; cada folha mostra a sua metade */
+.intro-wheel {
+  position: absolute;
+  top: 50%;
+  display: block;
+  width: 96vmin;
+  height: 96vmin;
+  translate: 0 -50%;
+  rotate: 0deg;
+  transition: rotate 1.05s cubic-bezier(0.6, 0, 0.3, 1);
+}
+.intro-leaf.is-left .intro-wheel { right: -48vmin; }
+.intro-leaf.is-right .intro-wheel { left: -48vmin; }
+
+.intro-plate {
+  position: absolute;
+  top: max(7vh, 56px);
+  left: 50%;
+  translate: -50% 0;
+  padding: 0.55em 1.3em 0.55em 1.8em;
+  border: 1px solid var(--in-gold-dim);
+  background: var(--in-ink);
+  box-shadow: inset 0 0 0 3px var(--in-ink), inset 0 0 0 4px rgb(216 166 64 / 0.4);
+  color: var(--in-gold);
+  font-family: var(--font-display, 'VALVE Pulp', sans-serif);
+  font-size: clamp(16px, 2.6vmin, 30px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  transition: opacity 0.5s;
+}
+
+.intro.is-unlock .intro-wheel { rotate: 90deg; }
+.intro.is-unlock .intro-plate { opacity: 0; }
+.intro.is-unlock .intro-glow { scale: 0.012 1; opacity: 1; }
+.intro.is-unlock .intro-leaf { transition-duration: 0.7s; transition-timing-function: ease-out; }
+.intro.is-unlock .intro-leaf.is-left { transform: rotateY(3deg); }
+.intro.is-unlock .intro-leaf.is-right { transform: rotateY(-3deg); }
+.intro.is-open .intro-leaf { transition-duration: 2.1s; transition-timing-function: cubic-bezier(0.6, 0.05, 0.25, 1), ease-in; filter: brightness(0.25); }
+.intro.is-open .intro-leaf.is-left { transform: rotateY(88deg); }
+.intro.is-open .intro-leaf.is-right { transform: rotateY(-88deg); }
+.intro.is-open .intro-glow { scale: 1 1; opacity: 0; transition: scale 2s ease-out, opacity 1.6s ease-in 0.5s; }
+
+/* ---------- palco ---------- */
+.intro-stage {
+  position: relative;
+  width: min(100%, calc((100dvh - 32px) * 1.6168));
+  aspect-ratio: 1232 / 762;
+  container-type: inline-size;
+  scale: 0.88;
+}
+.intro.is-open .intro-stage { scale: 1; transition: scale 2.8s cubic-bezier(0.2, 0.75, 0.2, 1); }
+
+.intro-sketch {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 5px rgb(216 166 64 / 0.28));
+  opacity: 0;
+}
+.intro.is-open .intro-sketch { opacity: 1; transition: opacity 1.8s ease 0.5s; }
+
+.intro-brand {
+  position: absolute;
+  top: 3.2cqw;
+  left: 3cqw;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  opacity: 0;
+  translate: 0 -8px;
+  transition: opacity 0.9s, translate 0.9s var(--in-ease);
+}
+.intro.is-lit .intro-brand { opacity: 1; translate: 0 0; }
+.intro-title {
+  margin: 0;
+  color: var(--in-line);
+  font-family: var(--font-display, 'VALVE Pulp', sans-serif);
+  font-size: clamp(24px, 4.4cqw, 60px);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.intro-title-accent { color: var(--in-gold); }
+.intro-tagline {
+  margin: 0;
+  color: var(--in-mute);
+  font-size: clamp(11px, 1.2cqw, 14px);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---------- controles ---------- */
+.intro-controls {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+}
+.intro-btn {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid rgb(255 239 215 / 0.28);
+  border-radius: 8px;
+  background: rgb(12 13 16 / 0.72);
+  color: var(--in-line);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: border-color 0.2s, color 0.2s, transform 160ms var(--in-ease);
+}
+.intro-btn:hover { border-color: var(--in-gold); color: var(--in-gold); }
+.intro-btn:active { transform: scale(0.97); }
+.intro-btn:focus-visible,
+.intro-card:focus-visible { outline: 2px solid var(--in-gold); outline-offset: 3px; }
+.intro-btn > svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+
+/* ---------- mesa, deck e cartas ---------- */
+.intro-cards {
+  --cw: 8.8cqw;
+  --ratio: 337 / 525;
+  position: absolute;
+  top: 54%;
+  right: 0;
+  left: 0;
+  height: 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.intro-pool {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: 84%;
+  height: 150%;
+  translate: -50% -50%;
+  background: radial-gradient(closest-side, rgb(216 166 64 / 0.2), rgb(216 166 64 / 0.06) 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.4s;
+}
+.intro.is-lit .intro-pool { opacity: 1; }
+
+.intro-deck {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: var(--cw);
+  aspect-ratio: var(--ratio);
+  translate: -50% -50%;
+  scale: 0.7;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 18px rgb(216 166 64 / 0.35));
+  transition: opacity 0.6s, scale 0.8s cubic-bezier(0.2, 1.2, 0.3, 1);
+}
+.intro.is-deck .intro-deck { opacity: 1; scale: 1; }
+.intro.is-dealt .intro-deck { opacity: 0; scale: 1.06; transition: opacity 0.35s 0.25s, scale 0.35s 0.25s; }
+.intro-back {
+  position: absolute;
+  inset: 0;
+  background: url('/intro/card-back.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 0.3cqw 0.5cqw rgb(0 0 0 / 0.55));
+}
+.intro-back:nth-child(1) { translate: -3px 7px; rotate: -3deg; }
+.intro-back:nth-child(2) { translate: 2px 3.5px; rotate: 2deg; }
+.intro.is-deck .intro-back:nth-child(3) { animation: intro-nudge 1.1s ease-in-out 0.2s; }
+@keyframes intro-nudge {
+  0%, 100% { translate: 0 0; }
+  30% { translate: -3px -4px; }
+  60% { translate: 3px -2px; }
+}
+
+.intro-card {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: block;
+  width: var(--cw);
+  aspect-ratio: var(--ratio);
+  margin-left: calc(var(--cw) * -0.14);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--in-black);
+  perspective: 800px;
+  rotate: calc(var(--o) * 4deg);
+  translate: 0 calc(var(--o) * var(--o) * 0.35cqw);
+  transform-origin: 50% 130%;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: translate 0.28s var(--in-ease), rotate 0.28s var(--in-ease), scale 0.28s var(--in-ease), opacity 0.25s;
+}
+.intro-card:first-of-type { margin-left: 0; }
+.intro.is-dealt .intro-card { opacity: 1; visibility: visible; }
+.intro.is-ready .intro-card { cursor: pointer; pointer-events: auto; }
+.intro.is-ready .intro-card:hover,
+.intro.is-ready .intro-card:focus-visible { z-index: 6; rotate: 0deg; translate: 0 -3cqw; scale: 1.22; }
+.intro.is-ready .intro-card:active { scale: 1.16; }
+.intro-card.is-dim { opacity: 0.3; }
+.intro-card.is-chosen { z-index: 7; rotate: 0deg; translate: 0 -4cqw; scale: 1.34; }
+
+.intro-faces { position: absolute; inset: 0; display: block; transform-style: preserve-3d; }
+.intro-rev,
+.intro-front { position: absolute; inset: 0; backface-visibility: hidden; }
+.intro-rev {
+  display: block;
+  transform: rotateY(180deg);
+  background: url('/intro/card-back.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 0.5cqw 1cqw rgb(0 0 0 / 0.6));
+}
+.intro-front {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--cw) * 0.06);
+  padding: calc(var(--cw) * 0.19) calc(var(--cw) * 0.1) calc(var(--cw) * 0.14);
+  border-radius: calc(var(--cw) * 0.05);
+  background: var(--in-line);
+  box-shadow: inset 0 0 0 calc(var(--cw) * 0.045) var(--in-black), 0 0.7cqw 1.6cqw rgb(0 0 0 / 0.6);
+  transition: box-shadow 0.25s;
+}
+.intro-front::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--cw) * 0.085);
+  border: 1px solid rgb(16 19 13 / 0.5);
+  border-radius: calc(var(--cw) * 0.02);
+  pointer-events: none;
+}
+.intro.is-ready .intro-card:hover .intro-front,
+.intro.is-ready .intro-card:focus-visible .intro-front,
+.intro-card.is-chosen .intro-front {
+  box-shadow: inset 0 0 0 calc(var(--cw) * 0.045) var(--in-black), 0 0 2.6cqw rgb(216 166 64 / 0.7), 0 1.4cqw 2.6cqw rgb(0 0 0 / 0.7);
+}
+.intro-art { position: relative; display: grid; flex: 1; width: 100%; place-items: center; }
+.intro-art::before {
+  content: "";
+  position: absolute;
+  width: 92%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(216 166 64 / 0.28), transparent);
+}
+.intro-art > svg {
+  position: relative;
+  width: 56%;
+  height: auto;
+  fill: none;
+  stroke: var(--in-black);
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.intro-art > svg * { vector-effect: non-scaling-stroke; }
+.intro-rule {
+  position: relative;
+  display: block;
+  width: 62%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--in-black), transparent);
+}
+.intro-rule::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  translate: -50% -50%;
+  rotate: 45deg;
+  background: var(--in-black);
+}
+/* nomes longos já vêm com hífen opcional (U+00AD) no i18n e quebram em duas linhas */
+.intro-name {
+  display: grid;
+  min-height: 2em;
+  align-items: center;
+  font-family: var(--font-display, 'VALVE Pulp', sans-serif);
+  font-size: calc(var(--cw) * 0.12);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  text-wrap: balance;
+  hyphens: manual;
+}
+
+.intro-caption {
+  position: absolute;
+  right: 0;
+  bottom: 1.6cqw;
+  left: 0;
+  z-index: 3;
+  margin: 0;
+  color: var(--in-mute);
+  font-size: clamp(11px, 1.15cqw, 15px);
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.6s, color 0.2s;
+}
+.intro.is-ready .intro-caption { opacity: 1; }
+.intro-caption.is-hot { color: var(--in-gold); }
+
+/* "Pular" e "Rever": o próximo estado entra sem transição */
+.intro.is-instant,
+.intro.is-instant * { transition: none !important; animation: none !important; }
+
+/* ---------- celular: desenho em cima, cartas em 3 colunas que rolam ---------- */
+@media (width < 48rem) {
+  .intro { justify-content: flex-start; padding-block: 8px; overflow-y: auto; }
+  .intro-stage { width: 100%; aspect-ratio: auto; display: flex; flex-direction: column; }
+  .intro-sketch { position: relative; inset: auto; height: auto; aspect-ratio: 1232 / 762; }
+  .intro-brand { position: relative; top: auto; left: auto; order: -1; padding: 6px 4px; }
+  .intro-controls { position: relative; top: auto; right: auto; order: -1; align-self: flex-end; }
+  .intro-cards {
+    --cw: calc((100cqw - 32px) / 3);
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    height: auto;
+    flex-wrap: wrap;
+    gap: 14px 12px;
+    padding: 18px 0 8px;
+  }
+  .intro-card,
+  .intro-card:first-of-type { margin-left: 0; rotate: calc(var(--o) * 0.8deg); translate: 0 0; }
+  .intro.is-ready .intro-card:hover,
+  .intro.is-ready .intro-card:focus-visible { translate: 0 -4px; scale: 1.06; }
+  .intro-card.is-chosen { translate: 0 -6px; scale: 1.1; }
+  .intro-pool { width: 100%; height: 100%; }
+  .intro-caption { position: relative; bottom: auto; padding: 14px 0 28px; }
+  .intro-name { font-size: calc(var(--cw) * 0.13); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro,
+  .intro * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
