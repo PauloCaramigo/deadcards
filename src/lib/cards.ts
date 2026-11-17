@@ -63,7 +63,9 @@ export function getPlayerTrend(p: Player): number {
 }
 
 export function activeRoster(players: Player[], teamId: string): Player[] {
-  return players.filter((p) => p.teamId === teamId && !p.inactive);
+  // Versão no mesmo time da carta principal é o mesmo jogador: fica fora do elenco e da média do time.
+  const sameTeamVersion = (p: Player) => !isMainCard(p) && players.some((m) => m.id === p.variantOf && m.teamId === p.teamId);
+  return players.filter((p) => p.teamId === teamId && !p.inactive && !sameTeamVersion(p));
 }
 
 export function teamOvr(players: Player[], teamId: string) {

@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useAnimate } from "motion/react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, useData } from "../lib/data";
-import { DEFAULT_TIER_CONFIG, POSITIONS, REGIONS, STAT_KEYS, calculateOVR, getPlayerHistory, getPlayerOvr } from "../lib/cards";
+import { DEFAULT_TIER_CONFIG, POSITIONS, REGIONS, STAT_KEYS, calculateOVR, getPlayerHistory, getPlayerOvr, isMainCard } from "../lib/cards";
 import { FRAME_PRESETS, getCardTier, type Tier } from "../lib/rarity";
 import type { BgSettings, Player, Stats, Team, TierBand } from "../lib/types";
 import { Card } from "../components/Card";
@@ -179,6 +179,14 @@ function PlayerForm({ editId, onEditId }: { editId: string | null; onEditId: (id
             </select>
           </Field>
           <Field label="Data do registro"><input type="date" className={input} value={date} onChange={(e) => setDate(e.target.value || today())} /></Field>
+          <div className="sm:col-span-2">
+            <Field label="Versão de (vazio = carta principal)">
+              <select className={input} value={d.variantOf ?? ""} onChange={(e) => set({ variantOf: e.target.value || undefined })}>
+                <option value="">Carta principal</option>
+                {players.filter((p) => isMainCard(p) && p.id !== d.id).map((p) => <option key={p.id} value={p.id}>{p.name} · {teams.find((t) => t.id === p.teamId)?.tag ?? "?"} · {getPlayerOvr(p)}</option>)}
+              </select>
+            </Field>
+          </div>
         </div>
 
         <div className="space-y-2">
